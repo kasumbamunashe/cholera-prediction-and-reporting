@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cholera Prediction System</title>
+    <!-- Include Google Maps API script -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA6Gm18zfqZo1f351_4SyqCSpiG4f0P1oI&libraries=places"></script>
+    <!-- Include your JavaScript file -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            background-image: url("static/img.png");
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: transparent;
+            color: black;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 550px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+        label {
+            font-size: 1em;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+            text-align: left;
+        }
+        input, select, button {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 5px;
+        }
+        .symptoms {
+            text-align: left;
+            margin-top: 10px;
+        }
+        .symptom-label {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .result {
+            margin-top: 20px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cholera Prediction System</h1>
+        <form id="personForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required><br><br>
+
+            <label for="age">Age:</label>
+            <input type="number" id="age" name="age" required><br><br>
+
+            <label for="gender">Gender:</label>
+            <select id="gender" name="gender" required>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select><br><br>
+
+            <label for="orp">Select your nearest Orp Center:</label>
+            <select id="orp" name="orp" required>
+                <option value="Rimuka">Munda Orp (Rimuka)</option>
+                <option value="Rimuka2">Pemba Orp (Rimuka)</option>
+                <option value="pixie">Father Flower Orp (Pixie Combie)</option>
+                <option value="waverly">Waverly Orp</option>
+            </select><br><br>
+
+            <label>Select symptoms that you have been experiencing:</label>
+            <div class="symptoms">
+                <input type="checkbox" id="symptom_fever" name="symptoms" value="Fever">
+                <label for="symptom_fever" class="symptom-label">Fever</label>
+                <input type="checkbox" id="symptom_diarrhea" name="symptoms" value="Diarrhea">
+                <label for="symptom_diarrhea" class="symptom-label">Diarrhea</label>
+                <input type="checkbox" id="symptom_dehydration" name="symptoms" value="Dehydration">
+                <label for="symptom_dehydration" class="symptom-label">Dehydration</label>
+                <input type="checkbox" id="symptom_headache" name="symptoms" value="Headache">
+                <label for="symptom_headache" class="symptom-label">Headache</label>
+                <input type="checkbox" id="symptom_shock" name="symptoms" value="Shock">
+                <label for="symptom_shock" class="symptom-label">Shock</label>
+                <input type="checkbox" id="symptom_cramps" name="symptoms" value="Abdominal-cramps">
+                <label for="symptom_cramps" class="symptom-label">Muscle Cramps</label>
+                <input type="checkbox" id="symptom_blood" name="symptoms" value="low-blood-pressure">
+                <label for="symptom_blood" class="symptom-label">Low Blood Pressure</label>
+                <input type="checkbox" id="symptom_nausea" name="symptoms" value="Nausea">
+                <label for="symptom_nausea" class="symptom-label">Nausea</label>
+            </div><br>
+
+            <input type="hidden" id="latitude" name="latitude">
+            <input type="hidden" id="longitude" name="longitude">
+
+            <button type="submit">Predict</button>
+        </form>
+
+        <div class="result" id="diagnosisResult"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, errorHandler, { enableHighAccuracy: true });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
+
+        function showPosition(position) {
+            document.getElementById("latitude").value = position.coords.latitude;
+            document.getElementById("longitude").value = position.coords.longitude;
+        }
+
+        function errorHandler(error) {
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    alert("User denied the request for Geolocation.");
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    alert("Location information is unavailable.");
+                    break;
+                case error.TIMEOUT:
+                    alert("The request to get user location timed out.");
+                    break;
+                case error.UNKNOWN_ERROR:
+                    alert("An unknown error occurred.");
+                    break;
+            }
+        }
+
+        document.getElementById("personForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            // Collect form data
+            let formData = new FormData(this);
+
+            // Send form data via AJAX
+            fetch('/save_person_and_diagnose', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update UI with diagnosis result
+                let resultDiv = document.getElementById("diagnosisResult");
+                if (data.diagnosis_result) {
+                    resultDiv.innerHTML = `<p>Diagnosis: ${data.message}</p>`;
+                } else {
+                    resultDiv.innerHTML = `<p>${data.message}</p>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Display error message
+                let resultDiv = document.getElementById("diagnosisResult");
+                resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            });
+        });
+    </script>
+</body>
+</html>

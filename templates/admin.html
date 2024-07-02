@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            background-image: url('static/img_1.png');
+            background-size: cover;
+            color: black;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+        .navbar-container {
+            display: flex;
+            background-color:black;
+        }
+        .side-nav {
+            width: 200px;
+            background-color: black;
+            color: white;
+            padding: 1em;
+            top: 0;
+            left: 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        .side-nav a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: white;
+            display: block;
+        }
+        .side-nav a:hover {
+            color: #f1f1f1;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            margin-left: 220px;
+        }
+        .admin-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .admin-card {
+            background-color: #C6BEBC;
+            border-radius: 10px;
+            padding: 20px;
+            width: 200px;
+            margin-bottom: 20px;
+        }
+        .admin-form {
+            display: none;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 300px;
+        }
+        #mapContainer {
+            flex: 1;
+            padding: 20px;
+            margin-left: 220px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        #map {
+            height: calc(100vh - 120px);
+            width: 100%;
+        }
+        .map-info {
+            color: black; /* Adjust text color for visibility */
+            background-color: white; /* Adjust background color */
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-size: 14px; /* Adjust font size as needed */
+        }
+        #genderPieChart {
+                width: 300px; /* Adjust width as needed */
+                height: 300px; /* Adjust height as needed */
+}
+
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA6Gm18zfqZo1f351_4SyqCSpiG4f0P1oI&libraries=visualization&callback=initMap" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="navbar-container">
+    <div class="side-nav">
+        <h2>Menu</h2>
+        <a href="#" onclick="toggleMap()">Real-Time Tracking</a>
+        <a href="#" onclick="loadDataAnalytics()">Data-Analytics</a>
+        <a href="#" onclick="showAdmins()">Admin Management</a>
+    </div>
+    <div class="content" id="mainContent">
+        <h1>Welcome: {{ full_name }}</h1>
+        <p>Please select an option from the navigation menu.</p>
+    </div>
+</div>
+<div id="mapContainer">
+    <div id="realTimeTrackingContent" style="display: none;">
+        <h1>Real-Time Tracking</h1>
+        <p>This section demonstrates real-time tracking.</p>
+        <div id="map"></div>
+    </div>
+    <div id="dataAnalyticsContent" style="display: none;">
+        <h1>Data Analytics</h1>
+        <!-- Descriptive Analysis Section -->
+        <div id="descriptiveAnalysis">
+            <h2>Descriptive Analysis</h2>
+            <div id="summaryStats"></div>
+            <div id="visualization"></div>
+            <canvas id="genderPieChart"></canvas>
+        </div>
+    </div>
+</div>
+<script>
+    let map;
+
+    function initMap() {
+        const kadomaLatLng = { lat: -18.333333, lng: 29.915267 };
+        const mapOptions = {
+            center: kadomaLatLng,
+            zoom: 12,
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+        };
+        map = new google.maps.Map(document.getElementById("map"), mapOptions);
+
+        fetchAndDisplayPatients();
+    }
+
+    function fetchAndDisplayPatients() {
+        fetch('/patients')
+            .then(response => response.json())
+            .then(patients => {
+                patients.forEach(patient => {
+                    const marker = new google.maps.Marker({
+                        position: { lat: patient.latitude, lng: patient.longitude },
+                        map: map,
+                        title: `${patient.name}, ${patient.age} years old, ${patient.gender}`
+                    });
+
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `<div>
+                            <h4>${patient.name}</h4>
+                            <p>Age: ${patient.age}</p>
+                            <p>Gender: ${patient.gender}</p>
+                            <p>ORP: ${patient.orp}</p>
+                        </div>`
+                    });
+
+                    marker.addListener('click', () => {
+                        infoWindow.open(map, marker);
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching patient data:', error);
+            });
+    }
+
+    function toggleMap() {
+        const realTimeTrackingContent = document.getElementById('realTimeTrackingContent');
+        realTimeTrackingContent.style.display = 'block';
+        document.getElementById('dataAnalyticsContent').style.display = 'none';
+
+        if (!map) {
+            initMap();
+        }
+    }
+
+    function loadDataAnalytics() {
+        // Hide other content and show data analytics content
+        document.getElementById('realTimeTrackingContent').style.display = 'none';
+        document.getElementById('dataAnalyticsContent').style.display = 'block';
+
+        // Perform descriptive analysis
+        performDescriptiveAnalysis();
+    }
+
+    // Function to fetch patient data and perform analysis
+    function performDescriptiveAnalysis() {
+        fetch('/patients')
+            .then(response => response.json())
+            .then(patients => {
+                // Extract age and gender data for summary statistics
+                const ages = patients.map(patient => patient.age);
+                const genders = patients.map(patient => patient.gender);
+
+                // Calculate summary statistics
+                const ageStats = calculateSummaryStatistics(ages);
+                const genderCounts = countGender(genders);
+
+                // Display summary statistics
+                displaySummaryStatistics(ageStats, genderCounts);
+
+                // Plot visualizations
+                plotHistogram(ages);
+                plotPieChart(genderCounts);
+            })
+            .catch(error => {
+                console.error('Error fetching patient data:', error);
+            });
+    }
+
+    // Helper function to calculate summary statistics
+    function calculateSummaryStatistics(data) {
+        const mean = data.reduce((acc, val) => acc + val, 0) / data.length;
+        const median = calculateMedian(data);
+        const mode = calculateMode(data);
+        const stdDev = calculateStandardDeviation(data, mean);
+
+        return {
+            mean: mean.toFixed(2),
+            median: median.toFixed(2),
+            mode: mode,
+            stdDev: stdDev.toFixed(2)
+        };
+    }
+
+    // Helper function to calculate median
+    function calculateMedian(data) {
+        const sorted = data.sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+    }
+
+    // Helper function to calculate mode
+    function calculateMode(data) {
+        const frequency = {};
+        data.forEach(val => {
+            frequency[val] = frequency[val] ? frequency[val] + 1 : 1;
+        });
+
+        let mode = null;
+        let maxCount = 0;
+        for (const val in frequency) {
+            if (frequency[val] > maxCount) {
+                mode = val;
+                maxCount = frequency[val];
+            }
+        }
+        return mode;
+    }
+
+    // Helper function to calculate standard deviation
+    function calculateStandardDeviation(data, mean) {
+        const squaredDiffs = data.map(val => Math.pow(val - mean, 2));
+        const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / data.length;
+        return Math.sqrt(variance);
+    }
+
+    // Helper function to count gender distribution
+    function countGender(data) {
+        const counts = { male: 0, female: 0 };
+        data.forEach(gender => {
+            if (gender.toLowerCase() === 'male') counts.male++;
+            else if (gender.toLowerCase() === 'female') counts.female++;
+        });
+        return counts;
+    }
+
+    // Function to display summary statistics
+    function displaySummaryStatistics(ageStats, genderCounts) {
+        const summaryStatsDiv = document.getElementById('summaryStats');
+        summaryStatsDiv.innerHTML = `
+            <p>Mean Age: ${ageStats.mean}</p>
+            <p>Median Age: ${ageStats.median}</p>
+            <p>Mode Age: ${ageStats.mode}</p>
+            <p>Standard Deviation of Age: ${ageStats.stdDev}</p>
+            <p>Male Count: ${genderCounts.male}</p>
+            <p>Female Count: ${genderCounts.female}</p>
+        `;
+    }
+
+    // Function to plot histogram
+    function plotHistogram(data) {
+    const histogramCanvas = document.createElement('canvas');
+    histogramCanvas.width = 10; // Adjust canvas width as needed
+    histogramCanvas.height = 2; // Adjust canvas height as needed
+    document.getElementById('visualization').appendChild(histogramCanvas);
+
+    new Chart(histogramCanvas, {
+        type: 'bar',
+        data: {
+            labels: data.map((_, index) => `Patient ${index + 1}`),
+            datasets: [{
+                label: 'Age',
+                data: data,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    stacked: true,
+                }
+            }
+        }
+    });
+}
+
+
+    // Function to plot pie chart
+    function plotPieChart(genderCounts) {
+        const genderPieChart = document.getElementById('genderPieChart').getContext('2d');
+
+        new Chart(genderPieChart, {
+            type: 'pie',
+            data: {
+                labels: ['Male', 'Female'],
+                datasets: [{
+                    label: 'Gender Distribution',
+                    data: [genderCounts.male, genderCounts.female],
+                    backgroundColor: ['rgba(54, 162, 235, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+                    borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                aspectRatio: -4,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                return `${label}: ${value} (${((value / (genderCounts.male + genderCounts.female)) * 100).toFixed(2)}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function showAdmins() {
+        document.getElementById('realTimeTrackingContent').style.display = 'none';
+        document.getElementById('dataAnalyticsContent').style.display = 'none';
+
+        const mainContent = document.getElementById('mainContent');
+        mainContent.innerHTML = `
+            <h1>Admin Management</h1>
+            <div class="admin-container">
+                <div class="admin-card">
+                    <h3>View Admins</h3>
+                    <button onclick="viewAdmins()">View</button>
+                </div>
+                <div class="admin-card">
+                    <h3>Add Admin</h3>
+                    <button onclick="showAddAdminForm()">Add</button>
+                </div>
+                <div class="admin-card">
+                    <h3>Edit Admin</h3>
+                    <button onclick="showEditAdminForm()">Edit</button>
+                </div>
+                <div class="admin-card">
+                    <h3>Delete Admin</h3>
+                    <button onclick="showDeleteAdminForm()">Delete</button>
+                </div>
+            </div>
+            <div class="admin-form" id="addAdminForm">
+                <h3>Add Admin</h3>
+                <form id="addAdmin">
+                    <label for="full_name">Full Name:</label>
+                    <input type="text" id="full_name" name="full_name" required>
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                    <button type="submit">Add</button>
+                </form>
+            </div>
+            <div class="admin-form" id="editAdminForm">
+                <h3>Edit Admin</h3>
+                <form id="editAdmin">
+                    <label for="adminId">Admin ID:</label>
+                    <input type="text" id="adminId" name="adminId" required>
+                    <label for="full_name">Full Name:</label>
+                    <input type="text" id="full_name" name="full_name">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password">
+                    <button type="submit">Edit</button>
+                </form>
+            </div>
+            <div class="admin-form" id="deleteAdminForm">
+                <h3>Delete Admin</h3>
+                <form id="deleteAdmin">
+                    <label for="adminId">Admin ID:</label>
+                    <input type="text" id="adminId" name="adminId" required>
+                    <button type="submit">Delete</button>
+                </form>
+            </div>
+        `;
+    }
+
+    function viewAdmins() {
+        fetch('/view_admins')
+            .then(response => response.json())
+            .then(admins => {
+                const mainContent = document.getElementById('mainContent');
+                mainContent.innerHTML = `
+                    <h1>Admin Management</h1>
+                    <h2>Admin List</h2>
+                    <ul>
+                        ${admins.map(admin => `<li>${admin.full_name} (${admin.email})</li>`).join('')}
+                    </ul>
+                `;
+            })
+            .catch(error => {
+                console.error('Error fetching admins:', error);
+            });
+    }
+
+    function showAddAdminForm() {
+        document.getElementById('addAdminForm').style.display = 'block';
+        document.getElementById('editAdminForm').style.display = 'none';
+        document.getElementById('deleteAdminForm').style.display = 'none';
+    }
+
+    function showEditAdminForm() {
+        document.getElementById('editAdminForm').style.display = 'block';
+        document.getElementById('addAdminForm').style.display = 'none';
+        document.getElementById('deleteAdminForm').style.display = 'none';
+    }
+
+    function showDeleteAdminForm() {
+        document.getElementById('deleteAdminForm').style.display = 'block';
+        document.getElementById('addAdminForm').style.display = 'none';
+        document.getElementById('editAdminForm').style.display = 'none';
+    }
+
+    document.getElementById('addAdmin').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+
+        fetch('/add_admin', {
+            method: 'POST',
+            body: JSON.stringify(Object.fromEntries(formData)),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            event.target.reset();
+            document.getElementById('addAdminForm').style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Error adding admin:', error);
+        });
+    });
+
+    document.getElementById('editAdmin').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+
+        fetch('/edit_admin', {
+            method: 'POST',
+            body: JSON.stringify(Object.fromEntries(formData)),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            event.target.reset();
+            document.getElementById('editAdminForm').style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Error editing admin:', error);
+        });
+    });
+
+    document.getElementById('deleteAdmin').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+
+        fetch('/delete_admin', {
+            method: 'POST',
+            body: JSON.stringify(Object.fromEntries(formData)),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            event.target.reset();
+            document.getElementById('deleteAdminForm').style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Error deleting admin:', error);
+        });
+    });
+</script>
+</body>
+</html>

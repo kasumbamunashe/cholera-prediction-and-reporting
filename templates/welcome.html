@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to Cholera Prediction and Reporting</title>
+    <style>
+        body {
+            color: #3d120f;
+            background-image: url("static/img.png");
+            background-size: cover;
+            font-family: 'Open Sans', sans-serif;
+        }
+        header {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: transparent; /* Adding a slight background for better readability */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        p {
+            font-size: 1.2em;
+            font-weight: 400;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        ul li {
+            font-size: 1.1em;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .redirect-button {
+            display: block;
+            width: 150px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: black;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .redirect-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to Kadoma Cholera Prediction and Reporting Site</h1>
+    </header>
+    <div class="container">
+        <p>This system provides real-time insights into predicted cholera cases, enabling proactive public health interventions.</p>
+        <ul>
+            <li>Predictive modeling using machine learning algorithms</li>
+            <li>Geospatial tracking and mapping of cholera cases</li>
+            <li>Real-time reporting and alert systems</li>
+            <li>Data Analytics and visualization for informed decisions</li>
+        </ul>
+        <a href="{{ url_for('admin_login') }}" class="redirect-button">Admin Login</a>
+        <a href="{{ url_for('prediction_system') }}" class="redirect-button">Go to Prediction System</a>
+    </div>
+    <footer>
+        <p>&copy; Kadoma City 2024 Cholera Prediction and Reporting</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin login</title>
+</head>
+<style>
+    body{
+    font-family:'Open Sans',sans-serif;
+     background-image: url("static/doctor.jpg");
+    }
+    #login-box{
+    width: 300px;
+    padding: 20px;
+    padding: 2em;
+    border: 1px solid #ddd;
+    box-shadow: 0 0 10 px rgba(0,0,0,0.1);
+    }
+    label{
+    margin-bottom: 1em;
+    }
+    .login-container{
+    width:100%;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    }
+    .form-group{
+    margin-bottom:20px;
+    }
+    input[type="text"],input[type="password"]{
+    width:100%;
+    padding:10px;
+    margin-bottom:20px;
+    border:1px solid;
+   }
+   .login-btn{
+   border: none;
+   border-radius:5px;
+   cursor:pointer;
+   padding:10px 20px;
+   background-color: black;
+   color: white;
+   position: center;
+   }
+</style>
+<body>
+<main>
+    <div class="login-container">
+        <div class="login-box">
+    <h2>Admin Login</h2>
+    <form id = "login-form"  action="/admin_login" method="post">
+         <div class="form-group">
+        <label for="username">Username:</label>
+        <input type = "text" id="username" name="username" required></input><br><br>
+         </div>
+            <div class="form-group">
+        <label for ="password">Password:</label>
+        <input type="text" id="password" name="password" required></input><br><br>
+                <button id="login-btn" class="login-btn">Login</button>
+            </div>
+
+    </form>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>
