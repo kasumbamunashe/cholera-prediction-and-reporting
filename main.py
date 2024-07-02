@@ -3,7 +3,7 @@ import psycopg2
 import bcrypt
 from flask_mail import Message
 # Initialize Flask application
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 app.secret_key = 'your_secret_key_here'  # Change this to a secure secret key
 
 # PostgreSQL connection settings
